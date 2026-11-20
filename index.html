@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Where Preschool for All Dollars Go</title>
+<meta name="description" content="Every budgeted dollar of Multnomah County's Preschool for All fund, by line item, from the county's adopted budget documents.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&display=swap">
+<style>
+/* Layout: one ledger column. The whole fund as a single bar first, then the spent third broken out line by line. */
+:root {
+  --bg: #f3f5f4; --panel: #ffffff; --fg: #15211d; --muted: #5b6b65; --line: #d5dcd8;
+  --spend: #0d6b57; --reserve: #c98a1b; --save: #9fb3ab; --prior: #b9c6c0; --accent: #0d6b57;
+  --warn: #a4530c; --track: #e6ebe8;
+  --display: "Bricolage Grotesque", "Public Sans", system-ui, sans-serif;
+  --body: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1614; --panel: #17201d; --fg: #e7eeeb; --muted: #9aaaa3; --line: #2b3833;
+    --spend: #3fbf9f; --reserve: #e0a83f; --save: #4c5f58; --prior: #3a4a44; --accent: #3fbf9f;
+    --warn: #f0a35c; --track: #222e2a; color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.55 var(--body); }
+.wrap { max-width: 1040px; margin: 0 auto; padding: 0 20px; }
+a { color: var(--accent); text-underline-offset: 2px; }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+header { padding: 44px 0 8px; }
+.eyebrow { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+h1 { font: 700 clamp(30px, 5.2vw, 50px)/1.05 var(--display); margin: 0 0 16px; text-wrap: balance; letter-spacing: -.01em; }
+.lede { font-size: clamp(17px, 2.1vw, 20px); max-width: 64ch; margin: 0; }
+.lede b { font-weight: 700; }
+.controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 22px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--panel); }
+.seg button { font: 600 14px var(--body); padding: 8px 14px; border: 0; background: transparent; color: var(--muted); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
+.controls small { color: var(--muted); font-size: 13px; }
+
+section { padding: 34px 0 6px; }
+h2 { font: 700 clamp(21px, 2.8vw, 27px)/1.2 var(--display); margin: 0 0 6px; text-wrap: balance; }
+.sub { color: var(--muted); margin: 0 0 18px; max-width: 70ch; font-size: 15px; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 20px; }
+
+/* whole-fund bar */
+.fundbar { display: flex; height: 54px; border-radius: 6px; overflow: hidden; }
+.fundbar div { min-width: 2px; }
+.fundkey { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 18px; margin-top: 18px; }
+.fundkey .k { border-top: 4px solid var(--c); padding-top: 10px; }
+.fundkey .v { font: 500 26px/1.1 var(--mono); font-variant-numeric: tabular-nums; }
+.fundkey .p { font-family: var(--mono); color: var(--muted); font-size: 14px; }
+.fundkey .l { font-weight: 600; margin-top: 4px; }
+.fundkey .d { color: var(--muted); font-size: 14px; }
+.inflow { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
+
+/* bucket bars */
+.bars { display: grid; gap: 14px; }
+.bar .top { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; flex-wrap: wrap; }
+.bar .name { font-weight: 600; }
+.bar .amt { font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bar .amt span { color: var(--muted); }
+.track { position: relative; height: 16px; background: var(--track); border-radius: 3px; margin-top: 5px; }
+.track i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--spend); border-radius: 3px; }
+.track u { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--fg); opacity: .55; }
+.bar .chg { font-size: 13px; color: var(--muted); margin-top: 3px; }
+.legend { display: flex; gap: 18px; flex-wrap: wrap; font-size: 13px; color: var(--muted); margin-top: 16px; }
+.legend b { display: inline-block; vertical-align: middle; margin-right: 6px; }
+.legend .sw { width: 14px; height: 10px; background: var(--spend); border-radius: 2px; }
+.legend .tk { width: 2px; height: 14px; background: var(--fg); opacity: .55; }
+
+/* table */
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 14.5px; }
+th { text-align: left; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 600; padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td { padding: 11px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+td.r, th.r { text-align: right; white-space: nowrap; }
+td .what { color: var(--muted); font-size: 13.5px; max-width: 52ch; }
+td .tag { display: inline-block; font-size: 11.5px; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 0 6px; margin-top: 5px; }
+td .src { font-size: 12px; display: block; }
+tr.total td { font-weight: 700; border-top: 2px solid var(--fg); border-bottom: 0; }
+.up { color: var(--accent); } .down { color: var(--warn); }
+.minw { min-width: 300px; }
+
+/* columns */
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+.cols > * { min-width: 0; }
+h3 { font: 600 17px/1.3 var(--body); margin: 0 0 4px; }
+.vbars { display: flex; align-items: flex-end; gap: 10px; height: 210px; margin-top: 20px; }
+.vbars .c { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 100%; min-width: 0; }
+.vbars .b { width: 100%; max-width: 70px; background: var(--save); border-radius: 3px 3px 0 0; }
+.vbars .c.est .b { background: repeating-linear-gradient(135deg, var(--save) 0 5px, var(--track) 5px 10px); }
+.vbars .n { font: 500 13px var(--mono); margin-bottom: 4px; }
+.vlab { display: flex; gap: 10px; margin-top: 6px; }
+.vlab span { flex: 1; text-align: center; font-size: 12.5px; color: var(--muted); }
+.note { font-size: 13px; color: var(--muted); margin: 14px 0 0; }
+.stat3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; }
+.stat3 .v { font: 500 22px/1.1 var(--mono); }
+.stat3 .l { font-size: 12.5px; color: var(--muted); }
+
+.gap li { margin-bottom: 8px; }
+.gap ul { padding-left: 20px; margin: 10px 0 0; max-width: 72ch; }
+footer { padding: 34px 0 60px; color: var(--muted); font-size: 14px; }
+footer ul { padding-left: 20px; }
+.err { color: var(--warn); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <p class="eyebrow">Multnomah County · Preschool for All Program Fund</p>
+  <h1>Where Preschool for All dollars go</h1>
+  <p class="lede" id="lede">Loading the county's adopted budget…</p>
+  <div class="controls">
+    <div class="seg" role="group" aria-label="Fiscal year">
+      <button type="button" id="fy27" data-fy="2027" aria-pressed="true">FY2027 · Jul 2026 – Jun 2027</button>
+      <button type="button" id="fy26" data-fy="2026" aria-pressed="false">FY2026</button>
+    </div>
+    <small>Adopted budget figures. A budget is a plan; see “Planned versus spent” below.</small>
+  </div>
+</header>
+
+<section aria-labelledby="h-fund">
+  <h2 id="h-fund">The whole fund in one bar</h2>
+  <p class="sub">Everything in the fund this year: what came in before, plus this year's tax and interest. Most of it is not scheduled to be spent this year.</p>
+  <div class="panel">
+    <div class="fundbar" id="fundbar" role="img" aria-label="Fund split into spending, reserves and savings"></div>
+    <div class="fundkey" id="fundkey"></div>
+    <p class="inflow" id="inflow"></p>
+  </div>
+</section>
+
+<section aria-labelledby="h-spend">
+  <h2 id="h-spend">What this year's spending buys</h2>
+  <p class="sub">The spending slice above, grouped by purpose. Percentages are shares of this year's planned spending.</p>
+  <div class="panel">
+    <div class="bars" id="bars"></div>
+    <div class="legend"><span><b class="sw"></b>This year</span><span><b class="tk"></b><span id="priorlab">Prior year</span></span></div>
+  </div>
+</section>
+
+<section aria-labelledby="h-lines">
+  <h2 id="h-lines">Every line item</h2>
+  <p class="sub">Each row is one “program offer” in the county budget, the smallest unit the county publishes. The document link opens the county's own two-page PDF.</p>
+  <div class="panel scroll">
+    <table id="lines">
+      <thead><tr><th class="minw">Line item</th><th class="r">FY2026</th><th class="r">FY2027</th><th class="r">Change</th><th>County document</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</section>
+
+<section aria-labelledby="h-actual">
+  <h2 id="h-actual">Planned versus spent</h2>
+  <p class="sub">In its first three years the fund took in $233 million more than budgeted and spent $67 million less, the County Auditor found, and the balance has grown each year since. The most recent year with a published breakdown of actual spending is FY2024, from the County Auditor.</p>
+  <div class="cols">
+    <div class="panel">
+      <h3>Money left in the fund at year end</h3>
+      <div class="vbars" id="balbars" role="img" aria-label="Fund balance by fiscal year"></div>
+      <div class="vlab" id="ballab"></div>
+      <p class="note" id="balnote"></p>
+    </div>
+    <div class="panel">
+      <h3>What was actually spent in FY2024</h3>
+      <div class="bars" id="actuals" style="margin-top:14px"></div>
+      <p class="note">Rounded to the nearest million by the <a href="https://multco.us/file/preschool_for_all_audit_report/download">County Auditor (April 2025)</a>, from the county's accounting system. “Of budget” is the share of that year's budget for the category that was spent, where the auditor reported it.</p>
+    </div>
+  </div>
+</section>
+
+<section aria-labelledby="h-seats">
+  <h2 id="h-seats">What the seat money works out to</h2>
+  <p class="sub">The preschool-seats line divided by the number of seats the county reports for the same year.</p>
+  <div class="panel scroll">
+    <table id="seats">
+      <thead><tr><th>Fiscal year</th><th class="r">Seats</th><th class="r">Locations</th><th class="r">Seats line item</th><th class="r">Budget per seat</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <p class="note">The county pays providers $18,228 per school-year seat and $26,004 per full-year seat in FY2027, for every contracted seat whether or not it is filled. The line item also covers start-up, transportation and inclusion funds and the county staff who manage contracts, so it runs higher than the seat rate.</p>
+  </div>
+</section>
+
+<section class="gap" aria-labelledby="h-gap">
+  <h2 id="h-gap">What the public record stops short of</h2>
+  <div class="panel">
+    <ul>
+      <li><b>Payments to individual preschools.</b> The county publishes the list of sites but no dollar amount per provider. Contract amounts exist in each provider contract and in the county's accounting system; a public records request to Multnomah County is the way to get them.</li>
+      <li><b>Subcontracts.</b> Facilities grants flow through BuildUp Oregon and small-provider payments flow through intermediary organizations. The county budget shows the total sent to them, and the auditor's report lists facilities awards by type for FY2024.</li>
+      <li><b>Actual spending after FY2024 by category.</b> The county's annual financial report gives fund totals. Category-level actuals have only been published by the Auditor.</li>
+      <li id="remainder-note"></li>
+    </ul>
+  </div>
+</section>
+
+<footer>
+  <p><b>Sources.</b> All budget figures are transcribed from Multnomah County's adopted program offers (<a href="https://multco.us/info/fy-2027-program-offers">FY2027</a>, <a href="https://multco.us/info/fy-2026-program-offers">FY2026</a>); copies are in the <code>sources</code> folder of this repository. Fund totals: program offers 25200A, 25200B and 25200C. Actual spending: <a href="https://multco.us/file/preschool_for_all_audit_report/download">County Auditor, April 2025</a>. The data behind every chart is in plain CSV: <a href="data/offers.csv">offers</a>, <a href="data/fund.csv">fund</a>, <a href="data/balance.csv">balance</a>, <a href="data/fy24_actuals.csv">FY2024 actuals</a>, <a href="data/seats.csv">seats</a>.</p>
+  <p>An independent volunteer project. Not affiliated with Multnomah County.</p>
+</footer>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  const usdM = (v) => '$' + (v / 1e6).toFixed(v >= 1e8 ? 1 : v >= 1e6 ? 1 : 2) + 'M';
+  const usd = (v) => '$' + Math.round(v).toLocaleString('en-US');
+  const pct = (v) => (v * 100).toFixed(v < 0.1 ? 1 : 0) + '%';
+
+  function parseCSV(text) {
+    const rows = []; let row = [], cell = '', q = false;
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (q) { if (c === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += c; }
+      else if (c === '"') q = true;
+      else if (c === ',') { row.push(cell); cell = ''; }
+      else if (c === '\n') { row.push(cell); rows.push(row); row = []; cell = ''; }
+      else if (c !== '\r') cell += c;
+    }
+    if (cell || row.length) { row.push(cell); rows.push(row); }
+    const head = rows.shift();
+    return rows.filter((r) => r.length === head.length).map((r) => Object.fromEntries(head.map((h, i) => [h, r[i]])));
+  }
+  const load = (name) => fetch('data/' + name + '.csv').then((r) => { if (!r.ok) throw new Error(name + ' ' + r.status); return r.text(); }).then(parseCSV);
+  const pdf = (offer, fy) => 'https://multco.us/file/' + offer.toLowerCase() + '-' + String(fy).slice(2) + '_adopted.pdf/download';
+
+  let D = null, FY = 2027;
+
+  function model(fy) {
+    const f = D.fund.find((r) => +r.fy === fy);
+    const total = +f.total, reserve = +f.contingency_reserve, save = +f.dedicated_savings;
+    const spend = total - reserve - save;
+    const col = 'fy' + String(fy).slice(2);
+    const itemized = D.offers.reduce((s, o) => s + (+o[col] || 0), 0);
+    return { f, total, reserve, save, spend, itemized, remainder: spend - itemized };
+  }
+
+  function buckets() {
+    const m = new Map();
+    for (const o of D.offers) {
+      const b = m.get(o.bucket) || { name: o.bucket, fy26: 0, fy27: 0 };
+      b.fy26 += +o.fy26 || 0; b.fy27 += +o.fy27 || 0; if (o.fy27 === '') b.gap = true; m.set(o.bucket, b);
+    }
+    const out = [...m.values()];
+    const r27 = model(2027).remainder, r26 = model(2026).remainder;
+    if (Math.abs(r27) > 1 || Math.abs(r26) > 1) out.push({ name: 'Not itemized', fy26: r26, fy27: r27 });
+    return out;
+  }
+
+  function render() {
+    const m = model(FY), prev = FY === 2027 ? 2026 : null, cur = 'fy' + String(FY).slice(2);
+    const bk = buckets().sort((a, b) => b[cur] - a[cur]);
+    const seatsShare = bk.find((b) => b.name === 'Preschool seats')[cur] / m.spend;
+
+    // lede
+    const lede = $('lede'); lede.textContent = '';
+    lede.append('The fund holds ', el('b', 'num', usdM(m.total)), ' in fiscal ' + FY + '. The county plans to spend ', el('b', 'num', usdM(m.spend)), ' of it, about ' + pct(m.spend / m.total) + '. Of each dollar it spends, ', el('b', 'num', Math.round(seatsShare * 100) + '¢'), ' is paid to preschools for seats.');
+
+    // fund bar
+    const parts = [
+      { l: 'Planned spending this year', d: 'Everything itemized below.', v: m.spend, c: 'var(--spend)' },
+      { l: 'Contingency and reserve', d: 'Set by policy at 10% and 15% of the year\'s tax revenue.', v: m.reserve, c: 'var(--reserve)' },
+      { l: 'Dedicated savings', d: 'Unappropriated balance held for later years, when the county forecasts costs will exceed tax revenue.', v: m.save, c: 'var(--save)' },
+    ];
+    const fb = $('fundbar'), fk = $('fundkey'); fb.textContent = ''; fk.textContent = '';
+    for (const p of parts) {
+      const s = el('div'); s.style.width = (p.v / m.total * 100) + '%'; s.style.background = p.c; s.title = p.l + ': ' + usdM(p.v); fb.append(s);
+      const k = el('div', 'k'); k.style.setProperty('--c', p.c);
+      k.append(el('div', 'v', usdM(p.v)), el('div', 'p', pct(p.v / m.total) + ' of the fund'), el('div', 'l', p.l), el('div', 'd', p.d)); fk.append(k);
+    }
+    $('inflow').textContent = 'Where the ' + usdM(m.total) + ' comes from: ' + usdM(+m.f.beginning_balance) + ' carried over from prior years, ' + usdM(+m.f.taxes) + ' in budgeted income tax and ' + usdM(+m.f.interest) + ' in interest. Planned spending is ' + (m.spend > (+m.f.taxes + +m.f.interest) ? usdM(m.spend - (+m.f.taxes) - (+m.f.interest)) + ' more than' : usdM((+m.f.taxes) + (+m.f.interest) - m.spend) + ' less than') + ' the year\'s budgeted tax and interest.';
+
+    // bucket bars
+    const bars = $('bars'); bars.textContent = '';
+    const max = Math.max(...bk.map((b) => Math.max(b.fy26, b.fy27)));
+    $('priorlab').textContent = prev ? 'FY' + prev : 'FY2027 (next year)';
+    const other = FY === 2027 ? 'fy26' : 'fy27';
+    for (const b of bk) {
+      if (b[cur] <= 0 && b[other] <= 0) continue;
+      const w = el('div', 'bar'), top = el('div', 'top'), amt = el('span', 'amt');
+      amt.append(usdM(b[cur]) + ' ', el('span', null, pct(b[cur] / m.spend)));
+      top.append(el('span', 'name', b.name), amt);
+      const tr = el('div', 'track'), fill = el('i'), tick = el('u');
+      fill.style.width = (Math.max(b[cur], 0) / max * 100) + '%'; tick.style.left = 'calc(' + (b[other] / max * 100) + '% - 1px)';
+      tr.append(fill); if (b[other] > 0) tr.append(tick);
+      w.append(top, tr);
+      if (b.name !== 'Not itemized') {
+        const d = b[cur] - b[other], sign = FY === 2027 ? 1 : -1;
+        const txt = b.gap ? 'Not comparable across years: an FY2026 offer in this group has no FY2027 document under the same number.' : b[other] > 0 && b[cur] > 0 ? ((d * sign >= 0 ? 'Up ' : 'Down ') + usdM(Math.abs(d)) + ' from FY2026 to FY2027') : (b[cur] > 0 ? 'New in FY' + FY : 'No offer under this heading in FY' + FY);
+        w.append(el('div', 'chg', txt));
+      } else w.append(el('div', 'chg', 'Planned spending minus the line items listed below.'));
+      bars.append(w);
+    }
+
+    // line items (always both years)
+    const tb = $('lines').tBodies[0]; tb.textContent = '';
+    const rows = D.offers.slice().sort((a, b) => (+b.fy27 || 0) - (+a.fy27 || 0) || (+b.fy26 || 0) - (+a.fy26 || 0));
+    const money = (v) => v === '' ? '—' : usd(+v);
+    for (const o of rows) {
+      const tr = el('tr'), c1 = el('td');
+      c1.append(el('div', null, o.line)); c1.firstChild.style.fontWeight = '600';
+      c1.append(el('div', 'what', o.buys), el('span', 'tag', o.bucket));
+      const c4 = el('td', 'r num');
+      if (o.fy26 !== '' && o.fy27 !== '' && +o.fy26 > 0) { const d = +o.fy27 - +o.fy26; c4.textContent = (d >= 0 ? '+' : '−') + usdM(Math.abs(d)).slice(0) ; c4.classList.add(d >= 0 ? 'up' : 'down'); }
+      else c4.textContent = +o.fy27 > 0 ? 'new' : '—';
+      const c5 = el('td');
+      for (const [fy, off] of [[2027, o.offer27], [2026, o.offer26]]) if (off) { const a = el('a', 'src', '#' + off + ' · FY' + fy); a.href = pdf(off, fy); c5.append(a); }
+      tr.append(c1, el('td', 'r num', money(o.fy26)), el('td', 'r num', money(o.fy27)), c4, c5); tb.append(tr);
+    }
+    const m26 = model(2026), m27 = model(2027);
+    if (Math.abs(m27.remainder) > 1 || Math.abs(m26.remainder) > 1) {
+      const tr = el('tr'), c1 = el('td'); c1.append(el('div', null, 'Not itemized')); c1.firstChild.style.fontWeight = '600';
+      c1.append(el('div', 'what', 'Planned spending minus the line items above.'));
+      tr.append(c1, el('td', 'r num', Math.abs(m26.remainder) > 1 ? usd(m26.remainder) : '—'), el('td', 'r num', usd(m27.remainder)), el('td', 'r num', ''), el('td')); tb.append(tr);
+    }
+    const tot = el('tr', 'total'); tot.append(el('td', null, 'Planned spending'), el('td', 'r num', usd(m26.spend)), el('td', 'r num', usd(m27.spend)), el('td', 'r num up', '+' + usdM(m27.spend - m26.spend)), el('td')); tb.append(tot);
+    $('remainder-note').textContent = '';
+    $('remainder-note').append(el('b', null, usd(m27.remainder) + ' of FY2027 spending. '), 'The fund total less reserves and savings is ' + usd(m27.spend) + '; the FY2027 offers found for this page add up to ' + usd(m27.itemized) + '. Three FY2026 offers (the Chair\'s Office, expanded communications, and the Health Department mental health team) have no FY2027 document under the same number.');
+
+    // balance
+    const bb = $('balbars'), bl = $('ballab'); bb.textContent = ''; bl.textContent = '';
+    const bmax = Math.max(...D.balance.map((r) => +r.balance_m));
+    for (const r of D.balance) {
+      const c = el('div', 'c' + (r.kind.startsWith('Budget') ? ' est' : '')); const b = el('div', 'b'); b.style.height = (+r.balance_m / bmax * 85) + '%';
+      b.title = r.kind + '. ' + r.source; c.append(el('div', 'n', '$' + Math.round(+r.balance_m) + 'M'), b); bb.append(c);
+      bl.append(el('span', null, 'FY' + r.fy));
+    }
+    const bn = $('balnote'); bn.textContent = 'Balance on June 30 of each fiscal year. FY2026 (hatched) is the starting balance the FY2027 budget assumes; the audited figure comes with the county\'s next annual financial report. Sources: ';
+    const seen = new Set(); D.balance.forEach((r) => { if (seen.has(r.url)) return; seen.add(r.url); if (seen.size > 1) bn.append(', '); const a = el('a', null, r.source); a.href = r.url; bn.append(a); }); bn.append('.');
+
+    // FY24 actuals
+    const ac = $('actuals'); ac.textContent = ''; const amax = Math.max(...D.actuals.map((r) => +r.spent_m));
+    for (const r of D.actuals) {
+      const w = el('div', 'bar'), top = el('div', 'top'), amt = el('span', 'amt');
+      amt.append('$' + r.spent_m + 'M ', el('span', null, r.pct_of_budget_spent ? r.pct_of_budget_spent + '% of budget' : ''));
+      top.append(el('span', 'name', r.category), amt); top.firstChild.style.fontWeight = '500'; top.firstChild.style.fontSize = '14.5px';
+      const tr = el('div', 'track'), fill = el('i'); fill.style.width = (+r.spent_m / amax * 100) + '%'; tr.append(fill); w.append(top, tr); ac.append(w);
+    }
+
+    // seats
+    const sb = $('seats').tBodies[0]; sb.textContent = ''; const sites = D.offers.find((o) => o.key === 'sites');
+    for (const r of D.seats) {
+      const line = +r.fy === 2027 ? +sites.fy27 : +r.fy === 2026 ? +sites.fy26 : null, tr = el('tr');
+      tr.append(el('td', null, 'FY' + r.fy + ' · ' + r.kind.toLowerCase()), el('td', 'r num', (+r.seats).toLocaleString('en-US')), el('td', 'r num', r.locations), el('td', 'r num', line ? usd(line) : '—'), el('td', 'r num', line ? usd(line / +r.seats) : '—')); sb.append(tr);
+    }
+  }
+
+  document.querySelectorAll('.seg button').forEach((b) => b.addEventListener('click', () => {
+    FY = +b.dataset.fy; document.querySelectorAll('.seg button').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); if (D) render();
+  }));
+
+  Promise.all(['fund', 'offers', 'balance', 'fy24_actuals', 'seats'].map(load)).then(([fund, offers, balance, actuals, seats]) => { D = { fund, offers, balance, actuals, seats }; render(); })
+    .catch((e) => { const l = $('lede'); l.className = 'lede err'; l.textContent = 'Could not load the data files (' + e.message + '). If you opened this file directly, serve the folder instead: python3 -m http.server'; });
+})();
+</script>
+</body>
+</html>
