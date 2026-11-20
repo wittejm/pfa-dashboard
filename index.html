@@ -265,7 +265,7 @@ footer ul { padding-left: 20px; }
     // fund bar
     const parts = [
       { l: 'Planned spending this year', d: 'Everything itemized below.', v: m.spend, c: 'var(--spend)' },
-      { l: 'Contingency and reserve', d: 'Set by policy at 10% and 15% of the year\'s tax revenue.', v: m.reserve, c: 'var(--reserve)' },
+      { l: 'Contingency and reserve', d: 'Two pots set by county policy: a contingency for surprises this year (10% of the year\'s tax revenue) and a reserve against a revenue drop (15%).', v: m.reserve, c: 'var(--reserve)' },
       { l: 'Dedicated savings', d: 'Unappropriated balance held for later years, when the county forecasts costs will exceed tax revenue.', v: m.save, c: 'var(--save)' },
     ];
     const fb = $('fundbar'), fk = $('fundkey'); fb.textContent = ''; fk.textContent = '';
